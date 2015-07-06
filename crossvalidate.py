@@ -47,6 +47,9 @@ if __name__ == "__main__":
 	if not options.target_class:
 		error("Please provide the phenotype target to be predicted with -t \"TRAITNAME\"")
 		errorCount += 1
+	if not options.output_filename:
+		error("Please specify a file for the output with -o /path/to/result.file")
+		errorCount += 1
 	if errorCount > 0:
 		error("For help on usage, try calling:\n\tpython %s -h" % os.path.basename(sys.argv[0]))
 		exit(1)
