@@ -82,4 +82,4 @@ if __name__ == "__main__":
 		print classification_results.print_classification_log()
 		print classification_results
 	else:
-		print classification_results.print_classification_log_predictedOnly()
+		classification_results.print_classification_log_predictedOnly()
