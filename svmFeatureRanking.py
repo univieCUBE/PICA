@@ -174,7 +174,6 @@ def printFeatureRanking(w, dimRank, args):
 
     absLastRank = 1.0
     relevanceThreshold = abs(w[dimRank[0]]) * (1 - args.range/100.0 )
-    print "Group_ID\tScore\tClass"+descriptionHeader
     for rank in dimRank:
         assert abs(w[rank]) <= absLastRank, "Feature ranking list appears not to be sorted. " + \
             "%r <= %r evaluated to False" % (abs(w[rank]), absLastRank)
@@ -185,17 +184,32 @@ def printFeatureRanking(w, dimRank, args):
                 predictorForClass = 'NO'
             # if fmi[rank].find('/') != -1:     #Several COGs/NOGs might be grouped together because of same profile 
             featureGroup = fmi[rank].split('/') # ...need to be split on FS '/'
-            for feature in featureGroup:        # ...and printed individually.
-                if args.descr:
-                    description = '\t' + nogDescription[feature]
-                print feature + '\t' + str(w[rank]) + '\t' + predictorForClass + description
-            # else:   # Single COG can be printed directly
-            #    print fmi[rank] + '\t' + str(w[rank]) + '\t' + predictorForClass + description
-            
+
+            # PH
+            # collect compressed features as groups and write only "FeatureGroupX\tweight" and group to separate file (outputfile).groups
+            if len(featureGroup) > 1:
+                featureGroup_list.append(featureGroup)
+                featureGroups_count=featureGroups_count+1
+                ranking.append(("FeatureGroup"+str(featureGroups_count),str(w[rank]),predictorForClass,description))
+            else:
+                ranking.append((featureGroup[0],str(w[rank]),predictorForClass,description))
+
             absLastRank = abs(w[rank])
         else:
             break
-        
+    output_base=".".join(args.model.split(".")[:-1])
+    with open(output_base + ".rank","w") as rank_file:
+        rank_file.write("Group_ID\tScore\tClass"+descriptionHeader+"\n")
+        for featureRank in ranking:
+            rank_file.write("\t".join(featureRank)+"\n")
+
+    with open(output_base + ".rank.groups","w") as group_file:
+        group_file.write("Group_ID\tFeatures\n")
+        for index in range(0,len(featureGroup_list)):
+            group_file.write("FeatureGroup"+str(index+1)+"\t"+"/".join(featureGroup_list[index])+"\n")
+            # /PH       
+
+ 
 def checkArguments(args):
     if not os.path.isfile(args.model):
         print "ARGUMENT ERROR: SVM model file does not exist"
