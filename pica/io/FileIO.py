@@ -45,7 +45,10 @@ class FileIO():
 				index_to_attribute = pickle.loads(handle.read())
 			attribute_to_index = {}
 			for index, attribute in enumerate(index_to_attribute):
-				attribute_to_index[attribute] = index
+                        # PH fixed problem with compressed features
+                                attribute_split=attribute.split("/")
+                                for attribute in attribute_split:
+                                    attribute_to_index[attribute] = index
 			max_attribute = len(index_to_attribute)
 			nattributes = max_attribute + 1
 			
