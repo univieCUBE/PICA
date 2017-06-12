@@ -172,7 +172,11 @@ def printFeatureRanking(w, dimRank, args):
         nogDescription = readNogDescription(args.descr)      
         descriptionHeader = '\tGroup_description'
 
-    absLastRank = 1.0
+
+    ranking=[]
+    featureGroup_list=[]
+    featureGroups_count=0
+    absLastRank = 2.0
     relevanceThreshold = abs(w[dimRank[0]]) * (1 - args.range/100.0 )
     for rank in dimRank:
         assert abs(w[rank]) <= absLastRank, "Feature ranking list appears not to be sorted. " + \
@@ -187,6 +191,8 @@ def printFeatureRanking(w, dimRank, args):
 
             # PH
             # collect compressed features as groups and write only "FeatureGroupX\tweight" and group to separate file (outputfile).groups
+
+
             if len(featureGroup) > 1:
                 featureGroup_list.append(featureGroup)
                 featureGroups_count=featureGroups_count+1
