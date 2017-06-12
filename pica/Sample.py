@@ -6,7 +6,7 @@ A collection of samples.
 """
 
 from DataCollection import DataCollection
-from numpy import zeros, nonzero
+from numpy import zeros, nonzero, array
 from copy import deepcopy
 import random
 
@@ -261,7 +261,102 @@ class SampleSet():
 			gridcount += 1
 		return isequal
 	
-	
+        def induce_incompleteness(self,percent):
+
+                newsampleset = SampleSet(self.max_attribute)
+                newsampleset.feature_to_index = self.feature_to_index
+                newsampleset.index_to_feature = self.index_to_feature
+
+
+                for sample in self.__iter__():
+                  attribute_list=list(sample.get_attributes_index_list())
+                  num_of_features=int(round(len(attribute_list)*percent))
+                  new_attribute_list=random.sample(attribute_list,num_of_features)
+
+                  newsampleset.add_sample(sample.id,array(new_attribute_list))
+
+                newsampleset.load_class_labels(self.class_label_set)
+                newsampleset.set_current_class(self.current_class)
+
+                return newsampleset
+
+        def introduce_contamination(self,collection,percent):
+
+                newsampleset = SampleSet(self.max_attribute)
+                newsampleset.feature_to_index = self.feature_to_index
+                newsampleset.index_to_feature = self.index_to_feature
+
+                contaminate_with={}
+                all_class_labels=collection.keys()
+
+                #find a solution for multi class svm later
+                assert (len(all_class_labels)==2, "More than 2 classes (YES/NO) cannot be contaminated at the moment")
+                contaminate_with[all_class_labels[0]]=all_class_labels[1]
+                contaminate_with[all_class_labels[1]]=all_class_labels[0]
+
+                for sample in self.__iter__():
+                  new_attribute_list = list(sample.get_attributes_index_list())
+                  #add contamination from other training set. exactly 10% of features of median content (allowing doubles):
+                  contamination_sample=random.choice(collection[contaminate_with[sample.current_class_label]])
+                  add_num=int(round(len(contamination_sample)*percent,0))
+                  #if len(contamination_sample)<=add_num:
+                  #  new_attribute_list.extend(contamination_sample)
+                  #else:
+                  new_attribute_list.extend(random.sample(contamination_sample,add_num))
+
+                  #removing doubles again and create new sample
+                  new_attribute_list=list(set(new_attribute_list))
+                  newsampleset.add_sample(sample.id,array(new_attribute_list))
+
+                newsampleset.load_class_labels(self.class_label_set)
+                newsampleset.set_current_class(self.current_class)
+
+                return newsampleset
+
+        def map_test_set_attributes_to_training_set(self,training_set):
+
+                newsampleset = SampleSet(training_set.max_attribute)
+                newsampleset.index_to_feature = training_set.index_to_feature
+                newsampleset.feature_to_index = {}
+                for attribute in training_set.feature_to_index:
+                    index=training_set.feature_to_index[attribute]
+                    attribute_split=attribute.split("/")
+                    for attribute in attribute_split:
+                        newsampleset.feature_to_index[attribute]=index
+
+                for sample in self.__iter__():
+                    attribute_index_list=[]
+                    attribute_string_list=sample.get_attributes_string_list()
+                    for attribute_string in attribute_string_list:
+                        attribute_index_list.append(newsampleset.feature_to_index[attribute_string])
+
+                    newsampleset.add_sample(sample.id,array(attribute_index_list))
+
+                newsampleset.load_class_labels(self.class_label_set)
+                newsampleset.set_current_class(self.current_class)
+
+                return newsampleset
+
+        def _sort_by_sample_set(self,reference_set):
+
+                newsampleset = SampleSet(self.max_attribute)
+                newsampleset.index_to_feature = self.index_to_feature
+                newsampleset.feature_to_index = self.feature_to_index
+                newsampleset.all_samples=[]
+                newsampleset.indexed_samples=[]
+                
+
+                for ref_sample in reference_set:
+                    sample=self.get_by_id(ref_sample.id)
+                    newsampleset.indexed_samples.append(sample)
+
+                newsampleset.class_label_set = self.class_label_set
+                newsampleset.current_class = self.current_class
+
+                return newsampleset
+
+
+
 	def compress_features(self):
 		"""Compress features with identical profiles into single features in a new sample set."""
 		grid = self.build_numpy_grid()
