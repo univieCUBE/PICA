@@ -137,16 +137,14 @@ class Completeness():
 
 
 
-                                                for w in range(0,self.completeness+1,1):
+                                                for w in range(0,len(self.completeness)):
                                                     self.replicates[replicate][i].append([])
-                                                    completeness=float(w/float(self.completeness*1.0))
-                                                    incomplete_test_set = new_test_set.induce_incompleteness(completeness)
+                                                    incomplete_test_set = new_test_set.induce_incompleteness(self.completeness[w])
 
-                                                    for z in range(0,self.contamination+1,1):
+                                                    for z in range(0,len(self.contamination)):
                                                         self.replicates[replicate][i][w].append([])
-                                                        contamination=float(z/float(self.contamination*1.0))
                                                         #print(completeness,contamination)
-                                                        contaminated_test_set = incomplete_test_set.introduce_contamination(sample_attribute_collection,contamination)
+                                                        contaminated_test_set = incomplete_test_set.introduce_contamination(sample_attribute_collection,self.contamination[z])
                                                         
                                                         contaminated_test_set = contaminated_test_set.map_test_set_attributes_to_training_set(new_training_set) 
                                                         #print(dir(model))
@@ -235,9 +233,9 @@ class Completeness():
 
                 summary_statistics=[]
 		
-                for w in range(0,self.completeness+1,1):
+                for w in range(0,len(self.completeness)):
                     summary_statistics.append([])
-                    for z in range(0,self.contamination+1,1):
+                    for z in range(0,len(self.contamination)):
                         summary_statistics[w].append([])
                         f1_scores = []
                         balanced_accuracies = []
@@ -259,8 +257,8 @@ class Completeness():
 	        	mean_balanced_accuracy, stddev_balanced_accuracy = self._calculate_mean_and_standard_deviation(balanced_accuracies)
 		        mean_raw_accuracy, stddev_raw_accuracy           = self._calculate_mean_and_standard_deviation(raw_accuracies)
 		
-        		summary_statistics[w][z] = {"completeness": float(w/float(1.0*self.completeness)),
-                                                        "contamination level":float(z/float(1.0*self.contamination)),
+        		summary_statistics[w][z] = {"completeness": self.completeness[w],
+                                                        "contamination level": self.contamination[z],
                                                         "mean_f1_score":mean_f1_score,
 							"mean_balanced_accuracy":mean_balanced_accuracy,
 							"mean_raw_accuracy":mean_raw_accuracy,
