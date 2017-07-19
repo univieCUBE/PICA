@@ -8,7 +8,6 @@ import os,sys
 from optparse import OptionParser
 from pica.io.FileIO import FileIO
 from pica.Completeness import Completeness
-#from pica.CrossValidation import CrossValidation
 from pica.TestConfiguration import TestConfiguration
 from pica.io.FileIO import error
 from pprint import pprint # add by RVF
@@ -36,8 +35,10 @@ if __name__ == "__main__":
 	parser.add_option("-n","--feature_select_top_n",help="Take the top n features(feature selection option)", type="int", default=20)
 
         # PH add option completeness, contamination
-        parser.add_option("-w","--completeness",help="Completeness value between 0-1 (default = %default)",type="int",metavar="INT",default=2)
-        parser.add_option("-z","--contamination",help="Contamination level between 0-1 (default = %default)",type="int",metavar="INT",default=2)
+        parser.add_option("-w","--completeness_steps",help="Completeness steps between (default = %default)",type="int",metavar="INT",default=10)
+        parser.add_option("-z","--contamination_steps",help="Contamination steps between (default = %default)",type="int",metavar="INT",default=0)
+        parser.add_option("--completeness",help="If completeness_steps=0, use specified completeness (default = %default)",type="float",metavar="FLOAT",default=1.0)
+        parser.add_option("--contamination",help="If contamination_steps=0, use specified contamination (default = %default)",type="float",metavar="FLOAT",default=0.0)
 	
 	(options, args) = parser.parse_args()
 	
@@ -106,12 +107,33 @@ if __name__ == "__main__":
 	classifier.set_null_flag("NULL")
 	
 	test_configurations = [TestConfiguration("A",None,trainer,classifier)]
+
+        print(dir(options))
+
+        #HP added contamination/completeness
+        if options.contamination_steps == 0:
+            contamination=[options.contamination]
+        else:
+            contamination=[]
+            for i in xrange(0,options.contamination_steps+1,1):
+                contamination.append(float(i/float(1.0*options.contamination_steps)))
+
+        if options.completeness_steps == 0:
+            completeness=[options.completeness]
+        else:
+            completeness=[]
+            for i in xrange(0,options.completeness_steps+1,1):
+                completeness.append(float(i/float(1.0*options.completeness_steps)))
+
+        print(completeness)
+        print(contamination)
 	
+
 	#RVF changed (added the last 3 parameters)
 	if ( options.crossval_files ):
-        	crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,options.completeness,options.contamination,test_configurations,unmodified_samples,False,None,options.target_class,options.output_filename)
+        	crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples,False,None,options.target_class,options.output_filename)
 	else:
-		crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,options.completeness,options.contamination,test_configurations,unmodified_samples)		
+		crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples)		
 	crossvalidator.crossvalidate()
 
         #contamination makes this kind of output quite difficult. so leaving out at the moment
