@@ -263,6 +263,8 @@ class SampleSet():
 	
         def induce_incompleteness(self,percent):
 
+                if percent==1.0:
+                    return self
                 newsampleset = SampleSet(self.max_attribute)
                 newsampleset.feature_to_index = self.feature_to_index
                 newsampleset.index_to_feature = self.index_to_feature
@@ -296,13 +298,13 @@ class SampleSet():
 
                 for sample in self.__iter__():
                   new_attribute_list = list(sample.get_attributes_index_list())
-                  #add contamination from other training set. exactly 10% of features of median content (allowing doubles):
+                  #add contamination from other training set. exactly X% of features of median content (allowing doubles):
                   contamination_sample=random.choice(collection[contaminate_with[sample.current_class_label]])
-                  add_num=int(round(len(contamination_sample)*percent,0))
-                  #if len(contamination_sample)<=add_num:
-                  #  new_attribute_list.extend(contamination_sample)
-                  #else:
-                  new_attribute_list.extend(random.sample(contamination_sample,add_num))
+                  if percent<1.0:
+                    add_num=int(round(len(contamination_sample)*percent,0))
+                    new_attribute_list.extend(random.sample(contamination_sample,add_num))
+                  else:
+                    new_attribute_list.extend(contamination_sample)
 
                   #removing doubles again and create new sample
                   new_attribute_list=list(set(new_attribute_list))

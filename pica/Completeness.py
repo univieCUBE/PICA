@@ -141,6 +141,13 @@ class Completeness():
                                                     self.replicates[replicate][i].append([])
                                                     incomplete_test_set = new_test_set.induce_incompleteness(self.completeness[w])
 
+
+                                                    if len(sample_attribute_collection.keys()) != 2:
+                                                        print(sample_attribute_collection.keys())
+                                                        sys.stderr.write("Warning: skipping contamination of Fold %i in replicate %i: need exactly 2 different class labels\n" % (i, replicate))
+                                                        for z in range(0,len(self.contamination)):
+                                                            self.replicates[replicate][i][w].append([])
+                                                        continue
                                                     for z in range(0,len(self.contamination)):
                                                         self.replicates[replicate][i][w].append([])
                                                         #print(completeness,contamination)
@@ -246,6 +253,8 @@ class Completeness():
             		for replicate in self.replicates:
 	        		for fold in replicate:
                                         fold=fold[w][z]
+                                        if len(fold)==0:
+                                            continue
 					f1_score = fold[test_configuration_index].get_F1_score()
 					balanced_accuracy = fold[test_configuration_index].get_balanced_accuracy()
 					raw_accuracy = fold[test_configuration_index].get_raw_accuracy()
