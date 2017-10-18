@@ -4,7 +4,7 @@ Perform cross-validation with a given training algorithm and classification algo
 @author Norman MacDonald
 @date 2010-02-16
 """
-import os,sys
+import os,sys,threading,time
 from optparse import OptionParser
 from pica.io.FileIO import FileIO
 from pica.Completeness import Completeness
@@ -39,6 +39,7 @@ if __name__ == "__main__":
         parser.add_option("-z","--contamination_steps",help="Contamination steps between (default = %default)",type="int",metavar="INT",default=0)
         parser.add_option("--completeness",help="If completeness_steps=0, use specified completeness (default = %default)",type="float",metavar="FLOAT",default=1.0)
         parser.add_option("--contamination",help="If contamination_steps=0, use specified contamination (default = %default)",type="float",metavar="FLOAT",default=0.0)
+        parser.add_option("--threads",help="Allow multiple threads",type="int",metavar="INT",default=1)
 	
 	(options, args) = parser.parse_args()
 	
@@ -108,7 +109,6 @@ if __name__ == "__main__":
 	
 	test_configurations = [TestConfiguration("A",None,trainer,classifier)]
 
-        print(dir(options))
 
         #HP added contamination/completeness
         if options.contamination_steps == 0:
@@ -127,14 +127,20 @@ if __name__ == "__main__":
 
         print(completeness)
         print(contamination)
-	
+	threadLock=threading.Lock()
 
 	#RVF changed (added the last 3 parameters)
 	if ( options.crossval_files ):
-        	crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples,False,None,options.target_class,options.output_filename)
+        	crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples,options.threads,False,None,options.target_class,options.output_filename)
 	else:
-		crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples)		
+		crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples,options.threads)		
 	crossvalidator.crossvalidate()
+
+        c=0
+        print("Waiting for threads to finish")
+        while threading.activeCount() > 1 and c < 1800:
+            time.sleep(1)
+            c += 1
 
         #contamination makes this kind of output quite difficult. so leaving out at the moment
 
