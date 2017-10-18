@@ -14,6 +14,7 @@ import pickle
 
 import sys
 MPI_PARALLEL = False
+
 class CrossValidation():
 	"""The main crossvalidation class."""
 	
@@ -57,7 +58,7 @@ class CrossValidation():
 		
 		return training_set, test_set
 		
-		
+
 	def crossvalidate(self):
 		root_output = self.root_output
 		

@@ -27,7 +27,7 @@ class DataItem:
 		self.id = identifier
 	def __getitem__(self,attribute):
 		"""Return the attribute."""
-		return self.dicFields[attribute]
+		return self.dicFields.get(attribute,None)
 	def __setitem__(self,attribute,value):
 		"""Set the attribute."""
 		self.dicFields[attribute] = value
