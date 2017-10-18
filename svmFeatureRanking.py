@@ -176,7 +176,7 @@ def printFeatureRanking(w, dimRank, args):
     ranking=[]
     featureGroup_list=[]
     featureGroups_count=0
-    absLastRank = 2.0
+    absLastRank = 3.0
     relevanceThreshold = abs(w[dimRank[0]]) * (1 - args.range/100.0 )
     for rank in dimRank:
         assert abs(w[rank]) <= absLastRank, "Feature ranking list appears not to be sorted. " + \
