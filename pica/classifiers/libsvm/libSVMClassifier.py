@@ -28,7 +28,7 @@ class libSVMClassifier(BaseClassifier):
 		"""Test the libSVM classifier on the sample set and return the ClassificationResults."""
 		
 		classification_results = ClassificationResults()
-		print "Testing on %d samples"%(len(lstSamples))
+		#print "Testing on %d samples"%(len(lstSamples))
 		for sample in lstSamples:
 			#if sample.get_class_label() != self.null_flag:	# RVF
 			if True: # RVF. Also classify the sample, if the class is previously unknown
