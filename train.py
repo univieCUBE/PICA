@@ -79,7 +79,7 @@ if __name__ == "__main__":
 	classname = options.algorithm.split(".")[-1]
 	TrainerClass = __import__(modulepath, fromlist=(classname,))
 	if options.C:
-		trainer = TrainerClass.__dict__[classname](options.parameters, C=options.C)
+		trainer = TrainerClass.__dict__[classname](options.parameters, C=options.C, probability = 1)
 	else:
 		trainer = TrainerClass.__dict__[classname](options.parameters)
 	

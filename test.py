@@ -77,7 +77,7 @@ if __name__ == "__main__":
 	
 	classifier.set_null_flag("NULL")
 	classification_results = classifier.test(samples,rules)
-	
+
 	if options.input_classes_filename:
 		print classification_results.print_classification_log()
 		print classification_results

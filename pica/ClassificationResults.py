@@ -5,16 +5,17 @@ Store the results and statistics of a classification algorithm.
 @date: 2010-02-16
 """
 class ClassificationResult:
-	def __init__(self,who,predicted_class,true_class):
+	def __init__(self,who,predicted_class,true_class,prob):
 		self.who = who
 		self.predicted_class = predicted_class
 		self.true_class = true_class
+                self.prob = prob
 		
 	def __str__(self):
-		return "%s\t%s\t%s"%(self.who,self.true_class,self.predicted_class)
+		return "%s\t%s\t%s\t%s"%(self.who,self.true_class,self.predicted_class,str(prob))
 	
 	def getSpeciesPrediction(self):
-		return [self.who, self.predicted_class]
+		return [self.who, self.predicted_class, str(self.prob)]
 
 class ClassificationResults:
 	"""Store the results and statistics of a classification algorithm."""
@@ -30,12 +31,12 @@ class ClassificationResults:
 		"""Change the positive class label."""
 		self._positive_class = positive_class
 		
-	def add_classification(self,who,predicted_class,true_class):
+	def add_classification(self,who,predicted_class,true_class,prob):
 		if predicted_class == None:
 			predicted_class = "NULL"
 		if true_class == None:
 			true_class = "NULL"
-		classification_result = ClassificationResult(who,predicted_class,true_class)
+		classification_result = ClassificationResult(who,predicted_class,true_class,prob)
 		if not self.classifications.has_key(who):
 			self.classifications[who] = []
 		self.classifications[who].append(classification_result)
@@ -210,12 +211,12 @@ class ClassificationResults:
 		return "\n".join(sout)
 		
 	def print_classification_log(self):
-		print "Organism\tTrue\tPredicted"
+		print "Organism\tTrue\tPredicted\tProbability"
 		for c in self.classifications_list:
 			print c
 			
 	def print_classification_log_predictedOnly(self):
-		print "Organism\tPredicted"
+		print "Organism\tPredicted\tProbability"
 		for c in self.classifications_list:
 			print "\t".join(c.getSpeciesPrediction())
 
