@@ -18,7 +18,8 @@ if __name__ == "__main__":
 	parser = OptionParser(version="PICA %prog 1.0.1")
 	parser.add_option("-a","--algorithm",action="store",dest="algorithm",
 					help="Training algorithm [default = %default]",metavar="ALG",default="libsvm.libSVMTrainer")
-	parser.add_option("-k","--svm_cost",action="store",dest="C",metavar="FLOAT",help="Set the SVM misclassification penalty parameter C to FLOAT")
+	parser.add_option("-k","--svm_cost",action="store",dest="C",metavar="FLOAT",help="Set the SVM misclassification penalty parameter C to FLOAT",default=5)
+        parser.add_option("-b","--probability",action="store",dest="probability",metavar="INT",help="create a model which supports probability prediction", default=1)
 	parser.add_option("-s","--samples",action="store",dest="input_samples_filename",help="Read samples from FILE",metavar="FILE")
 	parser.add_option("-c","--classes",action="store",dest="input_classes_filename",help="Read class labels from FILE",metavar="FILE")
 	parser.add_option("-t","--targetclass",action="store",dest="target_class",help="Set the target CLASS for testing",metavar="CLASS")
@@ -78,10 +79,10 @@ if __name__ == "__main__":
 	modulepath = "pica.trainers.%s"%(options.algorithm)
 	classname = options.algorithm.split(".")[-1]
 	TrainerClass = __import__(modulepath, fromlist=(classname,))
-	if options.C:
-		trainer = TrainerClass.__dict__[classname](options.parameters, C=options.C, probability = 1)
-	else:
-		trainer = TrainerClass.__dict__[classname](options.parameters)
+	if options.probability > 1:
+		options.probability = 1
+	trainer = TrainerClass.__dict__[classname](options.parameters, C=options.C, probability=options.probability)
+	trainer = TrainerClass.__dict__[classname](options.parameters, C=5, probability=options.probability)
 	
 	trainer.set_null_flag("NULL")
 	pt.start()
