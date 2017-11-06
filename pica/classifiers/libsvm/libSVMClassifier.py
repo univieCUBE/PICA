@@ -29,13 +29,11 @@ class libSVMClassifier(BaseClassifier):
 		
 		classification_results = ClassificationResults()
 		#print "Testing on %d samples"%(len(lstSamples))
-                p=[]
 		for sample in lstSamples:
 			#if sample.get_class_label() != self.null_flag:	# RVF
 			if True: # RVF. Also classify the sample, if the class is previously unknown
 				best_class, prob = self.classify(sample,model)
 				classification_results.add_classification(sample.id,best_class,sample.get_class_label(), prob)
-                                #p.append(probs)
 		return classification_results
 	
 	
@@ -50,4 +48,6 @@ class libSVMClassifier(BaseClassifier):
 		    best_class_index = int(model["svm_model"].predict(sample_vector))
                     prob = "NA"
 		return model["class_label_map_index"][int(best_class_index)], prob
+		best_class_index = int(model["svm_model"].predict(sample_vector))
+		return model["class_label_map_index"][best_class_index]
 	
