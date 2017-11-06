@@ -15,7 +15,7 @@ class libSVMTrainer(BaseTrainer):
 	KERNEL_TYPES = {"LINEAR":LINEAR,"RBF":RBF,"POLY":POLY,"SIGMOID":SIGMOID}
 	SVM_TYPES = {"C_SVC":C_SVC,"NU_SVC":NU_SVC,"ONE_CLASS":ONE_CLASS,"EPSILON_SVR":EPSILON_SVR,"NU_SVR":NU_SVR}
 	
-	def __init__(self,parameters_filename=None,kernel_type=None,C=None,probability=1):
+	def __init__(self,parameters_filename=None,kernel_type=None,C=None,probability=None):
 		"Load defaults"
 		
 		libSVMTrainer.default_parameters = svm_parameter.default_parameters.copy()
@@ -28,7 +28,7 @@ class libSVMTrainer(BaseTrainer):
 		#p["kernel_type"] = "RBF"
 		#p["kernel_type"] = "POLY"
 		#p["kernel_type"] = "SIGMOID"
-                p["probability"] = 1
+                p["probability"] = 0
 		
 		
 		"Overrides from file"
@@ -43,6 +43,8 @@ class libSVMTrainer(BaseTrainer):
 			p["kernel_type"] = kernel_type
 		if C:
 			p["C"] = C
+		if probability:
+			p["probability"] = 1
 		
 		print "Parameters modified from LIBSVM default: %s"%(p)
 		self.param.update(p)
