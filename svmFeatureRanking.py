@@ -36,8 +36,16 @@ def readMetadata(model):
             metadata['total_sv'] = int( line.split()[-1] )
             processedMetadata += 1
         elif line.startswith('rho') and not metadata.has_key('rho'):
-            metadata['rho'] = float( line.split()[-1] )
+	    metadata['rho'] = float( line.split()[-1] )
             processedMetadata += 1
+
+	#HP added compatibility with probability prediction
+	elif line.startswith('probA') and not metadata.has_key('probA'):
+	    metadata['probA']=float( line.split()[-1] )
+	    processedMetadata +=1
+        elif line.startswith('probB') and not metadata.has_key('probB'):
+            metadata['probB']=float( line.split()[-1] )
+            processedMetadata +=1
         elif line.startswith('label') and not metadata.has_key('label'):
             labels = line.split()
             if len(labels) > 3:
@@ -62,7 +70,7 @@ def readMetadata(model):
             # do nothing, this line only indicates the start of SV block
             processedMetadata += 1
         else:
-            if processedMetadata != 8: # expecting metadata in lines 0..7, SVs from line 8
+            if processedMetadata != 8 and processedMetadata != 10: # expecting metadata in lines 0..7, SVs from line 8 or 10 if probability
                 raise SVMmodelError('Meta data error')
             else:
                 #everything alright!
@@ -73,10 +81,9 @@ def readMetadata(model):
     return metadata
     
 def readSupportVectors(model, metadata):
-    # MAGIC number 8: Lines of metadata in an SVM model
-    # TODO remove magic number
-    numberOfFeatures = len(model[8].split()) - 1
-    numberOfSVs = len(model) - 8
+    sizeOfMetadata=len(metadata.keys())+1
+    numberOfFeatures = len(model[sizeOfMetadata].split()) - 1
+    numberOfSVs = len(model) - sizeOfMetadata
     assert numberOfSVs == metadata['total_sv'], \
         "The number of support vectors according to metadata does not " + \
         "match the number that is present in the actual data set."
@@ -85,9 +92,9 @@ def readSupportVectors(model, metadata):
     sv = [[0 for svector in range(numberOfSVs)] for feature in range(numberOfFeatures)]
     svCoeff = [0.0 for svector in range(numberOfSVs)] 
     
-    for line in xrange(8, len(model)):
+    for line in xrange(sizeOfMetadata, len(model)):
         currentSupportVector = model[line].split()
-        svCoeff[line-8] = float( currentSupportVector[0] )
+        svCoeff[line-sizeOfMetadata] = float( currentSupportVector[0] )
         del currentSupportVector[0]
         if len(currentSupportVector) != numberOfFeatures:
             raise SVMmodelError('support vectors have different dimensionality')
@@ -97,7 +104,7 @@ def readSupportVectors(model, metadata):
                         
             if presenceValue == 1:
                 feature = int( dataPoint.split(':')[0] )
-                sv[feature][line-8] = 1
+                sv[feature][line-sizeOfMetadata] = 1
             # no need to handle presenceValue=0, since matrix was init as zeros
     
     return sv, svCoeff 
