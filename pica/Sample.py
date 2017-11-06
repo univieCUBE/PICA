@@ -21,7 +21,7 @@ class Sample():
 		self.current_class_label = None
 		self.parent_sample_set = parent_sample_set
 		
-		if attributes != None: #if copying, do not initialize
+		if not attributes is None: #if copying, do not initialize
 			attributes.sort()
 			self.id = who_string
 			self._attributes_matrix = zeros(parent_sample_set.max_attribute+1,dtype=int)
