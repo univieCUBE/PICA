@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Extract the most important features of an SVM model, i.e. the COGs/NOGs with
 the highest predicted impact on presence/absence of the phenotype.

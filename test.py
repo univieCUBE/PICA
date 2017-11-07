@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Test the association rule model on a sample set.
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Train a classifier with a sample set.
 

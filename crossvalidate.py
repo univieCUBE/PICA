@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Perform cross-validation with a given training algorithm and classification algorithm
 
