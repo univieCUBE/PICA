@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-"""
-Test the association rule model on a sample set.
 
-@author Norman MacDonald
-@date 2010-02-16
-"""
+#"""
+#Test the association rule model on a sample set.
+#
+#@author Norman MacDonald
+#@date 2010-02-16
+#"""
+
 import os,sys
 from optparse import OptionParser
 from pica.io.FileIO import FileIO, error

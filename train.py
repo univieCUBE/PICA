@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-"""
-Train a classifier with a sample set.
 
-@author Norman MacDonald
-@date 2010-02-16
-"""
 import os,sys
 from optparse import OptionParser
 from pica.io.FileIO import FileIO
@@ -12,6 +7,12 @@ from pica.utils.ProgramTimer import ProgramTimer
 from pica.io.FileIO import error
 import pickle # RVF
 
+"""
+Train a classifier with a sample set.
+
+@author Norman MacDonald
+@date 2010-02-16
+"""
 
 
 if __name__ == "__main__":
@@ -131,6 +132,4 @@ if __name__ == "__main__":
 	
 	print "Finished training. (%0.2fs)"%(training_time)
 	total_time = pt.end()
-	print "Model output to %s. Total time: (%0.2fs)"%(options.output_filename,total_time)
-	
-	
+	print "Model output to %s. Total time: (%0.2fs)"%(options.output_filename,total_time)	
