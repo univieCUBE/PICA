@@ -21,11 +21,12 @@ if __name__ == "__main__":
 	parser.add_option("-a","--algorithm",action="store",dest="algorithm",
 					help="Training algorithm [default = %default]",metavar="ALG",default="libsvm.libSVMTrainer")
 	parser.add_option("-k","--svm_cost",action="store",dest="C",metavar="FLOAT",help="Set the SVM misclassification penalty parameter C to FLOAT",default=5)
-        parser.add_option("-b","--probability",action="store",dest="probability",metavar="INT",help="create a model which supports probability prediction", default=1)
+        parser.add_option("-b","--probability",action="store",dest="probability",metavar="INT",help="create a model which supports probability prediction", default=0)
 	parser.add_option("-s","--samples",action="store",dest="input_samples_filename",help="Read samples from FILE",metavar="FILE")
 	parser.add_option("-c","--classes",action="store",dest="input_classes_filename",help="Read class labels from FILE",metavar="FILE")
 	parser.add_option("-t","--targetclass",action="store",dest="target_class",help="Set the target CLASS for testing",metavar="CLASS")
 	parser.add_option("-o","--output",action="store",dest="output_filename",help="Write rules to FILE",metavar="FILE",default=None)
+        parser.add_option("--kernel",action="store",dest="kernel_type",help="kernel type [LINEAR, RBF, POLY or SIGMOID]",metavar="STRING",default="LINEAR")
 	parser.add_option("-p","--parameters",action="store",dest="parameters",help="FILE with additional, classifier-specific parameters. (confounders for CWMI)",metavar="FILE",default="taxonomic_confounders.txt")
 	parser.add_option("-f","--feature_select",help="Model file (currently only association rule files) with features to select from [default: %default]",metavar="FILE",default=None)
 	parser.add_option("-1","--feature_select_score",help="Order features by (feature selection option)", default="order_cwmi")
@@ -83,8 +84,8 @@ if __name__ == "__main__":
 	TrainerClass = __import__(modulepath, fromlist=(classname,))
 	if options.probability > 1:
 		options.probability = 1
-	trainer = TrainerClass.__dict__[classname](options.parameters, C=options.C, probability=options.probability)
-	trainer = TrainerClass.__dict__[classname](options.parameters, C=5, probability=options.probability)
+	trainer = TrainerClass.__dict__[classname](options.parameters, C=options.C, probability=options.probability, kernel_type=options.kernel_type)
+	#trainer = TrainerClass.__dict__[classname](options.parameters, C=5, probability=options.probability)
 	
 	trainer.set_null_flag("NULL")
 	pt.start()

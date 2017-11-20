@@ -48,6 +48,4 @@ class libSVMClassifier(BaseClassifier):
 		    best_class_index = int(model["svm_model"].predict(sample_vector))
                     prob = "NA"
 		return model["class_label_map_index"][int(best_class_index)], prob
-		best_class_index = int(model["svm_model"].predict(sample_vector))
-		return model["class_label_map_index"][best_class_index]
 	

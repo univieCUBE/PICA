@@ -39,7 +39,7 @@ class libSVMTrainer(BaseTrainer):
 				print "Parameter file could not be found, using defaults instead"
 
 		"Overrides from method call parameters"
-		if kernel_type:
+		if libSVMTrainer.KERNEL_TYPES.get(kernel_type):
 			p["kernel_type"] = kernel_type
 		if C:
 			p["C"] = C
