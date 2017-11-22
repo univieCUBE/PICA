@@ -9,10 +9,10 @@ from pica.trainers.BaseTrainer import BaseTrainer
 import os
 
 
-class SklearnSVMTrainer(BaseTrainer):
+class sklearnSVMTrainer(BaseTrainer):
     kernel_types=["linear","rbf","sigmoid","poly"]
 
-    def __init__(self,kernel_type=None,C=None,probability=None):
+    def __init__(self,parameter_file=None,C=None,probability=None,kernel_type=None):
         "PICA defaults"
         self.param = {"C":5,"gamma":"auto","kernel_type":"linear", "probability":0}
         #p["C"] = 5
@@ -25,8 +25,8 @@ class SklearnSVMTrainer(BaseTrainer):
 
 
         "Overrides from method call parameters"
-		kernel_type=kernel_type.lower()
-        if kernel_type in SklearnSVMTrainer.kernel_types:
+        kernel_type=kernel_type.lower()
+        if kernel_type in sklearnSVMTrainer.kernel_types:
             self.param["kernel_type"] = kernel_type
         if C:
             self.param["C"] = C
@@ -62,7 +62,7 @@ class SklearnSVMTrainer(BaseTrainer):
         C = float(self.param["C"])
         gamma = self.param["gamma"]
         b = self.param["probability"]
-        print "Starting svm (svm_type=%s,kernel_type=%s,C=%f,gamma=%f,probability=%d)"%(svm_type,kernel_type,C,gamma,b)
+        print "Starting svm (svm_type=%s,kernel_type=%s,C=%f,gamma=%s,probability=%d)"%(svm_type,kernel_type,C,str(gamma),b)
         svm_classifier = svm.SVC(kernel = kernel_type, C = C, gamma = gamma, probability = b)
 
         svm_classifier.fit(np.array(sample_attributes), np.array(class_labels))

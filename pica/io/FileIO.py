@@ -6,7 +6,8 @@ Base class for reading samples.
 """
 
 from __future__ import print_function
-import sys, os, pickle
+import sys, os
+from sklearn.externals import joblib
 from pica.Sample import SampleSet, ClassLabelSet
 from pica.DataCollection import DataCollection
 
@@ -41,8 +42,8 @@ class FileIO():
 		if indexToAttribute != None: # RVF this part is new (as explained above) for SVM
 			# Instead of generating new index-attribute mapping as above,
 			# import the mapping created while training.
-			with open(indexToAttribute+".featuremapindex", 'rb') as handle:
-				index_to_attribute = pickle.loads(handle.read())
+			#with open(indexToAttribute+".featuremapindex", 'rb') as handle:
+			index_to_attribute = joblib.load(indexToAttribute+".featuremapindex")
 			attribute_to_index = {}
 			for index, attribute in enumerate(index_to_attribute):
                         # PH fixed problem with compressed features
@@ -50,23 +51,25 @@ class FileIO():
                                 for attribute in attribute_split:
                                     attribute_to_index[attribute] = index
 			max_attribute = len(index_to_attribute)
-			nattributes = max_attribute + 1
+			nattributes = max_attribute #+ 1
 			
 		else: # for CPAR
 			attribute_to_index = {}
 			index_to_attribute = []
 			nattributes = 0
 		
-		# in both cases: read file. For SVM, this only adds new features
-		# that were not present in the training set. Otherwise, add all
-		# of them.	
-		for row in data:
-			fields = (x.strip() for x in row.split()[1:])
-			for field in fields:
-				if not attribute_to_index.has_key(field):
-					attribute_to_index[field] = nattributes
-					index_to_attribute.append(field)
-					nattributes += 1
+			# in both cases: read file. For SVM, this only adds new features
+			# that were not present in the training set. Otherwise, add all
+			# of them.
+			# HP: this is obviously not needed for SVM-test - libSVM ignored additional features,
+			# but sklearn does not! only needed for training..
+			for row in data:
+				fields = (x.strip() for x in row.split()[1:])
+				for field in fields:
+					if not attribute_to_index.has_key(field):
+						attribute_to_index[field] = nattributes
+						index_to_attribute.append(field)
+						nattributes += 1
 					
 		max_attribute = nattributes - 1
 						
@@ -80,7 +83,12 @@ class FileIO():
 			fields = [x.strip() for x in line.split()]
 			if len(fields) > 0:
 				who = fields[0]
-				attributes = map(lambda f: sample_set.feature_to_index[f.strip()],fields[1:])
+				attributes = []
+				for f in fields[1:]:
+					fti = sample_set.feature_to_index.get(f.strip())
+					if fti:
+						attributes.append(fti)
+				#attributes = map(lambda f: sample_set.feature_to_index[f.strip()],fields[1:])
 				sample_set.add_sample(who,attributes)
 			else: 
 				pass #skip empty line

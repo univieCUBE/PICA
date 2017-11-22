@@ -5,7 +5,8 @@ from optparse import OptionParser
 from pica.io.FileIO import FileIO
 from pica.utils.ProgramTimer import ProgramTimer
 from pica.io.FileIO import error
-import pickle # RVF
+from sklearn.externals import joblib #HP
+#import pickle # RVF
 
 """
 Train a classifier with a sample set.
@@ -84,6 +85,7 @@ if __name__ == "__main__":
 	TrainerClass = __import__(modulepath, fromlist=(classname,))
 	if options.probability > 1:
 		options.probability = 1
+	print(options.kernel_type)
 	trainer = TrainerClass.__dict__[classname](options.parameters, C=options.C, probability=options.probability, kernel_type=options.kernel_type)
 	#trainer = TrainerClass.__dict__[classname](options.parameters, C=5, probability=options.probability)
 	
@@ -104,17 +106,18 @@ if __name__ == "__main__":
 	else:
 		# i.e. CPAR2SVM or SVM
 		# creating 4 files. NOTE the hardcoded extensions
-		# Export the SVM model, using libSVM save method
-		rules['svm_model'].save(filename=options.output_filename)
+		# Export the SVM model, using pickle, since sklearn supports no model.save method
+
+		joblib.dump(rules['svm_model'],options.output_filename)
 		# Export class label map and the index (i.e. which class id corresponds to presence/absence)
 		with open(options.output_filename+".classlabelmap",'w') as outfile:
-			pickle.dump(rules["class_label_map"],outfile) #fails with model, because of SWIGpy object
+			joblib.dump(rules["class_label_map"],outfile) #fails with model, because of SWIGpy object
 		# TODO: I/O only one of these two, since they hold the same data in principle
 		with open(options.output_filename+".classlabelmapindex",'w') as outfile:
-			pickle.dump(rules["class_label_map_index"],outfile)
+			joblib.dump(rules["class_label_map_index"],outfile)
 		# Export the feature map (i.e. which COG corresponds to which SVM model dimension)
 		with open(options.output_filename+".featuremapindex",'w') as outfile:
-			pickle.dump(samples.get_index_to_feature(), outfile)
+			joblib.dump(samples.get_index_to_feature(), outfile)
 			
 	"""	#Ugly hack to directly test the rules
 		classifier = libSVMClassifier()

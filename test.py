@@ -12,7 +12,8 @@ from optparse import OptionParser
 from pica.io.FileIO import FileIO, error
 from pica.AssociationRule import load_rules
 from libsvm290.python.svm import svm_model #RVF
-import pickle # RVF
+from sklearn.externals import joblib # HP
+#import pickle # RVF
 	
 
 if __name__ == "__main__":
@@ -42,7 +43,7 @@ if __name__ == "__main__":
 		exit(1)
 	
 	fileio = FileIO()
-	if options.algorithm == "libsvm.libSVMClassifier": # RVF: part of SVM fix (feature-index map)
+	if options.algorithm == "libsvm.libSVMClassifier" or options.algorithm == "sklearn.sklearnSVMClassifier": # RVF: part of SVM fix (feature-index map)
 		samples = fileio.load_samples(options.input_samples_filename, indexToAttribute=options.model_filename)
 	else: #original code
 		samples = fileio.load_samples(options.input_samples_filename)
@@ -53,12 +54,15 @@ if __name__ == "__main__":
 	
 	#RVF
 	"""rules = load_rules(options.model_filename) #original code"""
-	if options.algorithm == "libsvm.libSVMClassifier":
-		m = svm_model(options.model_filename)
-		with open(options.model_filename+".classlabelmap", 'rb') as handle:
-			clm = pickle.loads(handle.read())
-		with open(options.model_filename+".classlabelmapindex", 'rb') as handle:
-			clmi= pickle.loads(handle.read())
+	if options.algorithm == "libsvm.libSVMClassifier" or options.algorithm == "sklearn.sklearnSVMClassifier":
+		#m = svm_model(options.model_filename)
+		m = joblib.load(options.model_filename)
+		clm = joblib.load(options.model_filename+".classlabelmap")
+		clmi = joblib.load(options.model_filename+".classlabelmapindex")
+		#with open(options.model_filename+".classlabelmap", 'rb') as handle:
+		#	clm = joblib.load(handle.read())
+		#with open(options.model_filename+".classlabelmapindex", 'rb') as handle:
+		#	clmi= joblib.load(handle.read())
 		rules = {"svm_model":m,"class_label_map":clm,"class_label_map_index":clmi}
 	else: #i.e. options.algorithm == "cpar.CPARClassifier":
 		rules = load_rules(options.model_filename)
@@ -71,8 +75,10 @@ if __name__ == "__main__":
 	classname = options.algorithm.split(".")[-1]
 	ClassifierClass = __import__(modulepath, fromlist=(classname,))
 
-	#RVF. Original code is in the ELSE statement	
-	if options.algorithm == "libsvm.libSVMClassifier":
+	#RVF. Original code is in the ELSE statement
+	#HP ugly hack to add sklearn.
+	#TODO test should automatically recognise what kind of model is used! maybe add another parameter file?
+	if options.algorithm == "libsvm.libSVMClassifier" or options.algorithm == "sklearn.sklearnSVMClassifier":
 		classifier = ClassifierClass.__dict__[classname]()
 	else:
 		classifier = ClassifierClass.__dict__[classname](accuracy_measure=options.model_accuracy)
