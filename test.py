@@ -23,7 +23,8 @@ if __name__ == "__main__":
 	parser.add_option("-m","--model_filename",action="store",help="use model from FILE for classification",metavar="FILE")
 	parser.add_option("-z","--model_accuracy",action="store",help="use model accuracy for classification",metavar="FILE",default="laplace")
 	parser.add_option("-t","--targetclass",action="store",dest="target_class",help="Set the target CLASS for testing",metavar="CLASS")
-	parser.add_option("-a","--algorithm",action="store",dest="algorithm",help="The algorithm for testing",metavar="ALG", default="libsvm.libSVMClassifier" )
+	#parser.add_option("-a","--algorithm",action="store",dest="algorithm",help="The algorithm for testing",metavar="ALG", default="libsvm.libSVMClassifier" )
+	parser.add_option("-a","--algorithm",action="store",dest="algorithm",help="The algorithm for testing",metavar="ALG", default="sklearn.sklearnSVMClassifier" )
 	parser.add_option("-p","--parameters",action="store",dest="parameters",help="FILE with additional, classifier-specific parameters.",metavar="FILE",default=None)
 	(options, args) = parser.parse_args()
 	

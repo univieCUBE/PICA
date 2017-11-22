@@ -37,14 +37,12 @@ class sklearnSVMClassifier(BaseClassifier):
 
     def classify(self,sample,model):
         """Classify a single sample with the model."""
-        sample_vector = [int(x) for x in sample.get_attribute_matrix()]
-        samples=np.array([sample_vector])
-        print(samples)
+        sample_vector = np.array([[int(x) for x in sample.get_attribute_matrix()]])
         #adding support for probability models!
         if self.parameters["probability"] == True:
-            probs = model["svm_model"].predict_proba(samples)
+            probs = model["svm_model"].predict_proba(sample_vector)
             best_class_index, prob = max(enumerate(probs[0]), key=operator.itemgetter(1))
         else:
-            best_class_index = int(model["svm_model"].predict(samples))
+            best_class_index = int(model["svm_model"].predict(sample_vector))
             prob = "NA"
         return model["class_label_map_index"][int(best_class_index)], prob
