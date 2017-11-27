@@ -20,6 +20,24 @@ class SVMmodelError(Exception):
     def __str__(self):
         return repr(self.value)
 
+def getModel(model):
+    try:
+        classifier=joblib.load(model)
+    except:
+        raise SVMmodelError('Model file error')
+    return classifier
+
+def getWeights(classifier):
+    #Coefficients from the model are already weights - but for some reason
+    #they follow a different convention - in our previous versions we had
+    #negative --> NO, positive --> YES
+    # here it appears to be the other way round, so multiply by -1
+    try:
+        w=classifier.coef_[0]*-1
+    except:
+        raise SVMmodelError('Model has no "coef_" value')
+    return w
+
 def readMetadata(model):  
     metadata = {}  
     processedMetadata = 0    
@@ -130,13 +148,11 @@ def rankDimensions(w):
     return sorted(range(len(w)), key=lambda k: abs(w[k]), reverse=True)
     
 def readFeatureMap(featureMapFile):
-    with open(featureMapFile, 'r') as handle:
-        featureMap = pickle.loads(handle.read())
+    featureMap = joblib.load(featureMapFile)
     return featureMap
 
 def readClassLabelMap(classLabelMapFile):
-    with open(classLabelMapFile, 'r') as handle:
-        classLabelMap = pickle.loads(handle.read())
+    classLabelMap = joblib.load(classLabelMapFile)
     return classLabelMap
 
 def readNogDescription(nogDescriptionFile):
@@ -260,6 +276,7 @@ import argparse
 import numpy
 import pickle
 import os
+from sklearn.externals import joblib
 
 defaultRange = 100
 rangeHelp="""Restrict output to top features only. The highest ranking feature is returned 
@@ -277,13 +294,11 @@ checkArguments(args)
 with open(args.model, 'r') as modelFile:
     model = [line[:-1].strip('\n').strip('\r') for line in modelFile.readlines()]
 try:
-    metadata = readMetadata(model)
-    
-    sv, svCoeff = readSupportVectors(model, metadata) 
-      
-    w = calculateWeightsVector(sv, svCoeff) 
-    
-    dimRank = rankDimensions(w) 
+    classifier=getModel(args.model)
+
+    w=getWeights(classifier)
+
+    dimRank = rankDimensions(w)
     
     w = determinePredictionClass(w, args)
     
