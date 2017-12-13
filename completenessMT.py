@@ -7,7 +7,7 @@ Perform cross-validation with a given training algorithm and classification algo
 import os,sys, json
 from optparse import OptionParser
 from pica.io.FileIO import FileIO
-from pica.CompletenessMultithreading import Completeness
+from pica.CompletenessMultithreading import Completeness, crossvalidate
 from pica.TestConfiguration import TestConfiguration
 from pica.io.FileIO import error
 from pprint import pprint # add by RVF
@@ -79,6 +79,8 @@ if __name__ == "__main__":
 	print "Sample set has %d features."%(samples.get_number_of_features())
         unmodified_samples.set_current_class(options.target_class)
 	samples.set_current_class(options.target_class)
+        #unmodified_samples=samples.subset()
+
 	print "Parameters from %s"%(options.parameters)
 	print "Compressing features...",
 
@@ -134,14 +136,14 @@ if __name__ == "__main__":
 
 	#RVF changed (added the last 3 parameters)
 	if ( options.crossval_files ):
-        	crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples,options.threads,False,None,options.target_class,options.output_filename)
+        	Completeness_simulator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples,options.threads,False,None,options.target_class,options.output_filename)
 	else:
-		crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples,options.threads)		
-	crossvalidator.crossvalidate()
+		Completeness_simulator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples,options.threads)		
+        Completeness_simulator.crossvalidate()
 
 	fout = open(options.output_filename,"w")
 	
-        stats = crossvalidator.get_summary_statistics(0)
+        stats = Completeness_simulator.get_summary_statistics(0)
         resorted={}
         jsonout=[]
         for index in stats[0][0].keys():
