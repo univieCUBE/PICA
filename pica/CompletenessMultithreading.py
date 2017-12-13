@@ -23,21 +23,23 @@ import multiprocessing
 #class Completeness():
 #        """The main completeness-assay class."""
 def replicateProcess(parametertuple):
-            training_set, test_set, dataset, replicate, fold = parametertuple
+            training_set, test_set, target_class, test_configurations, outputFilename, completeness, contamination, root_output, replicate, fold = parametertuple
+            w_tot = len(completeness)
+            z_tot = len(contamination)
             output=[]
             replicate_plus_one=replicate+1
             print "Fold %d: training_set: %d, test set: %d"%(fold,len(training_set),len(test_set))
-            if ( dataset.target_class != None ):
+            if ( target_class != None ):
                 fileio = FileIO()
-                trainingSetFile = outputPath+"/"+str(dataset.target_class)+"_R"+str(replicate)+"_F"+str(fold)+"_training.set"
-                testSetFile =     outputPath+"/"+str(dataset.target_class)+"_R"+str(replicate)+"_F"+str(fold)+"_test.set"
+                trainingSetFile = outputPath+"/"+str(target_class)+"_R"+str(replicate)+"_F"+str(fold)+"_training.set"
+                testSetFile =     outputPath+"/"+str(target_class)+"_R"+str(replicate)+"_F"+str(fold)+"_test.set"
                 print "Saving training set to: "+trainingSetFile
                 fileio.save_samples(training_set,trainingSetFile)
                 print "Saving test set to: "+testSetFile
                 fileio.save_samples(test_set,testSetFile)
 
-            for test_configuration_index in xrange(len(dataset.test_configurations)):
-                test_configuration=dataset.test_configurations[test_configuration_index]
+            for test_configuration_index in xrange(len(test_configurations)):
+                test_configuration=test_configurations[test_configuration_index]
                 test_name = test_configuration.name
                 new_training_set = training_set
                 new_test_set = test_set
@@ -47,9 +49,9 @@ def replicateProcess(parametertuple):
                     new_test_set = test_set.feature_select(features)
                 model = test_configuration.trainer.train(new_training_set)
 
-                if dataset.outputFilename != None:
+                if outputFilename != None:
                     if not hasattr(model, 'write'): # i.e. probably SVM model
-                        svmModelFile = outputPath+"/"+str(dataset.target_class)+"_R"+str(replicate)+"_F"+str(fold)+"_svm.model"                                                   
+                        svmModelFile = outputPath+"/"+str(target_class)+"_R"+str(replicate)+"_F"+str(fold)+"_svm.model"                                                   
                         model['svm_model'].save(filename=svmModelFile)
                         with open(svmModelFile+".classlabelmap",'a') as outfile:
                             pickle.dump(model["class_label_map"],outfile) #fails with model, because of SWIGpy object
@@ -70,20 +72,20 @@ def replicateProcess(parametertuple):
 
 
 
-                for w in xrange(dataset.w):
+                for w in xrange(w_tot):
                     output.append([])
-                    incomplete_test_set = new_test_set.induce_incompleteness(dataset.completeness[w])
+                    incomplete_test_set = new_test_set.induce_incompleteness(completeness[w])
                     err=0
-                    for z in xrange(dataset.z):
+                    for z in xrange(z_tot):
                         #output[w][z].append([])
-                        if round(dataset.contamination[z],1) == 0.0:
+                        if round(contamination[z],1) == 0.0:
                             results = test_configuration.classifier.test(incomplete_test_set.map_test_set_attributes_to_training_set(new_training_set),model)
                             summary = ClassificationSummary(results)
                             output[w].append(summary)
 
                         elif len(sample_attribute_collection.keys())==2:
                             #do crosscontamination if exactly 2 class labels given
-                            contaminated_test_set = incomplete_test_set.introduce_contamination(sample_attribute_collection,dataset.contamination[z])
+                            contaminated_test_set = incomplete_test_set.introduce_contamination(sample_attribute_collection,contamination[z])
 
                             contaminated_test_set = contaminated_test_set.map_test_set_attributes_to_training_set(new_training_set)
                               
@@ -91,34 +93,34 @@ def replicateProcess(parametertuple):
                             summary = ClassificationSummary(results)
                             output[w].append(summary)
 
-                            if ( dataset.target_class != None ):
+                            if ( target_class != None ):
                                 print results.print_classification_log()
                                 print results
 
-                            if dataset.root_output:
-                                fout = open("%(dataset.root_output)s.r%(replicate_plus_one)d.v%(fold)d.%(test_name)s.features"%(locals()),"w")
+                            if root_output:
+                                fout = open("%(root_output)s.r%(replicate_plus_one)d.v%(fold)d.%(test_name)s.features"%(locals()),"w")
                                 fout.write("\n".join(features))
                                 fout.close()
                         elif err==0:
                             sys.stderr.write("Warning: skipping contamination of fold %i of replicate %i: exactly 2 different class labels needed!"%(fold,replicate))
                             err=1
 
-                        #print(dataset.replicates[replicate][fold][w][z])
+                        #print(replicates[replicate][fold][w][z])
                                 
-#            if dataset.root_output:
+#            if root_output:
 
-#                fout = open("%(dataset.root_output)s.r%(replicate_plus_one)d.classification.log"%(locals()),"w")
-#                header_fields = ["sample","fold",dataset.sample_set.current_class]
-#                for test_configuration in dataset.test_configurations:
+#                fout = open("%(root_output)s.r%(replicate_plus_one)d.classification.log"%(locals()),"w")
+#                header_fields = ["sample","fold",sample_set.current_class]
+#                for test_configuration in test_configurations:
 #                      header_fields.append(test_configuration.name)
 #                output_dictionary = {}
 #                output_lines = ["\t".join(header_fields)]
-#                for fold in xrange(dataset.v):
-#                      for classification_index in xrange(len(dataset.replicates[replicate][fold][0].classifications_list)):
-#                              main_sample_record = dataset.replicates[replicate][fold][0].classifications_list[classification_index]
+#                for fold in xrange(v):
+#                      for classification_index in xrange(len(replicates[replicate][fold][0].classifications_list)):
+#                              main_sample_record = replicates[replicate][fold][0].classifications_list[classification_index]
 #                              output_line = [str(main_sample_record.who),str(fold+1),str(main_sample_record.true_class)]
-#                              for test_configuration_index in xrange(len(dataset.test_configurations)):
-#                                      test_sample_record = dataset.replicates[replicate][fold][test_configuration_index].classifications_list[classification_index]
+#                              for test_configuration_index in xrange(len(test_configurations)):
+#                                      test_sample_record = replicates[replicate][fold][test_configuration_index].classifications_list[classification_index]
 #                                      output_line.append(str(test_sample_record.predicted_class))
 #                              output_lines.append("\t".join(output_line))
 #                fout.write("\n".join(output_lines))
@@ -126,8 +128,8 @@ def replicateProcess(parametertuple):
             print "Finished replicate %d, fold %d"%(replicate_plus_one,fold)
             return output
 
-        #def startnewthread(dataset,replicate,partitions):
-        #    thread = dataset.replicateThread(replicate,partitions)
+        #def startnewthread(replicate,partitions):
+        #    thread = replicateThread(replicate,partitions)
         #    thread.start()
 
 class Completeness():
@@ -190,10 +192,9 @@ class Completeness():
                 training_set = self.sample_set.subset(training_list_list)
 
                 return training_set, test_set
-		
-	def crossvalidate(self):
-		root_output = self.root_output
 
+	
+        def crossvalidate(self):
 	
 		if self.outputFilename != None:
 			rvf_curDate = time.strftime("%Y-%m-%d-%H-%M-%S")
@@ -212,7 +213,8 @@ class Completeness():
 		    partitions = self._split_sample_set(self.v)
                     for i in xrange(self.v):
                         training_set, test_set = self._construct_training_and_testing_sets(partitions,i)
-                        tmplist.append((training_set,test_set,self,replicate,i))
+                        tmplist.append((training_set,test_set, self.target_class, self.test_configurations, self.outputFilename, self.completeness, self.contamination, self.root_output,replicate,i))
+                        
                 self.results=pool.map(replicateProcess, tmplist)
                 pool.close()
                 pool.join()

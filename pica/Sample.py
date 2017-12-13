@@ -20,11 +20,12 @@ class Sample():
 		self.class_labels = {}
 		self.current_class_label = None
 		self.parent_sample_set = parent_sample_set
-		
+                #self.parent_sample_set = None		
+
 		if not attributes is None: #if copying, do not initialize
-			attributes.sort()
+			#attributes.sort() #why sorting attributes?
 			self.id = who_string
-			self._attributes_matrix = zeros(parent_sample_set.max_attribute+1,dtype=int)
+			self._attributes_matrix = zeros(parent_sample_set.max_attribute+1,dtype="bool_")
 			for i in attributes:
 				self._attributes_matrix[i] = 1
 				
@@ -106,9 +107,10 @@ class Sample():
 		
 		retval = True
 		if target == None:
-			for c in self.parent_sample_set.class_label_set.get_classes():
-				if not self.is_null_class(c):
-					retval = False
+			#for c in self.parent_sample_set.class_label_set.get_classes():
+			#	if not self.is_null_class(c):
+			#		retval = False
+                        retval = True
 		else:
 			if not self.get_class_label(target) == self.parent_sample_set.null_flag:
 				retval = False
@@ -284,6 +286,8 @@ class SampleSet():
 
         def introduce_contamination(self,collection,percent):
 
+                if percent==0:
+                    return self
                 newsampleset = SampleSet(self.max_attribute)
                 newsampleset.feature_to_index = self.feature_to_index
                 newsampleset.index_to_feature = self.index_to_feature
@@ -410,7 +414,7 @@ class SampleSet():
 			newfeature_to_index[newfeature] = i
 		
 		
-		newgrid = zeros((len(self.indexed_samples),nunique_items),dtype=int)
+		newgrid = zeros((len(self.indexed_samples),nunique_items),dtype="bool_")
 		i=0
 		while i < nunique_items:
 			newgrid[:,i] = grid[:,newindex_to_oldindex[i]]
@@ -433,15 +437,15 @@ class SampleSet():
 		
 	def build_numpy_grid(self):
 		"""Build a numpy grid from the attribute vectors of each sample."""
-		grid = zeros((len(self.indexed_samples),self.max_attribute+1),dtype=int)
+		grid = zeros((len(self.indexed_samples),self.max_attribute+1),dtype="bool_")
 		for i in range(len(self.indexed_samples)):
-			grid[i,:] += self[i].get_attribute_matrix()
+			grid[i,:] = array(self[i].get_attribute_matrix())>0
 		return grid
 	
 	def randomize(self):
 		random.shuffle(self.indexed_samples)
 		
-	def subset(self,index_list_list):
+	def subset(self,index_list_list=None):
 		"""
 		Returns a new sample set covering the indexed samples.
 		
@@ -450,9 +454,13 @@ class SampleSet():
 		newsubset = SampleSet(self.max_attribute)
 		newsubset.indexed_samples = []
 		newsubset.all_samples = []
-		for l in index_list_list:
+                if index_list_list:
+		    for l in index_list_list:
 			newsubset.all_samples.extend(self.all_samples[l[0]:l[1]])
 			newsubset.indexed_samples.extend(self.indexed_samples[l[0]:l[1]])
+                else:
+                        newsubset.all_samples.extend(self.all_samples[:])
+                        newsubset.indexed_samples.extend(self.indexed_samples[:])
 		
 		newsubset.index_to_feature = self.index_to_feature
 		newsubset.feature_to_index = self.feature_to_index
@@ -471,7 +479,7 @@ class SampleSet():
 		indexed_features = [self.feature_to_index[feature] for feature in features]
 		print "Selecting %d features"%(len(indexed_features))
 		for sample in new_sample_set:
-			new_features = zeros(len(sample.get_attribute_matrix()),dtype=int)
+			new_features = zeros(len(sample.get_attribute_matrix()),dtype="bool_")
 			for feature_zero_index in xrange(len(indexed_features)):
 				if sample.satisfies((indexed_features[feature_zero_index],)):
 					new_features[indexed_features[feature_zero_index]] = 1
