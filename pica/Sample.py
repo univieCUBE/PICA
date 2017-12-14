@@ -275,7 +275,7 @@ class SampleSet():
                 for sample in self.__iter__():
                     attribute_list=sample.get_attributes_index_list()
                     num_of_features=int(round(len(attribute_list)*percent))
-                    new_attribute_list=random.choice(attribute_list,num_of_features)
+                    new_attribute_list=random.choice(attribute_list,num_of_features,replace=False)
 
                     newsampleset.add_sample(sample.id,new_attribute_list)
 
