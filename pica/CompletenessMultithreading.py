@@ -67,7 +67,7 @@ def replicateProcess(parametertuple):
                     sample_attribute_collection[index]=[]
 
                 for sample in new_test_set.__iter__():
-                    temp_attributes_list=list(sample.get_attributes_index_list())
+                    temp_attributes_list=sample.get_attributes_index_list()
                     sample_attribute_collection[sample.current_class_label].append(temp_attributes_list)
 
 
