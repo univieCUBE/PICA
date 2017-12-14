@@ -6,9 +6,9 @@ A collection of samples.
 """
 
 from DataCollection import DataCollection
-from numpy import zeros, nonzero, array
+from numpy import zeros, nonzero, array, random, append
 from copy import deepcopy
-import random
+#import random
 
 class Sample():
 	"""A single sample composed of attributes and an id.""" 
@@ -273,11 +273,11 @@ class SampleSet():
 
 
                 for sample in self.__iter__():
-                  attribute_list=list(sample.get_attributes_index_list())
-                  num_of_features=int(round(len(attribute_list)*percent))
-                  new_attribute_list=random.sample(attribute_list,num_of_features)
+                    attribute_list=sample.get_attributes_index_list()
+                    num_of_features=int(round(len(attribute_list)*percent))
+                    new_attribute_list=random.choice(attribute_list,num_of_features)
 
-                  newsampleset.add_sample(sample.id,array(new_attribute_list))
+                    newsampleset.add_sample(sample.id,new_attribute_list)
 
                 newsampleset.load_class_labels(self.class_label_set)
                 newsampleset.set_current_class(self.current_class)
@@ -293,26 +293,29 @@ class SampleSet():
                 newsampleset.index_to_feature = self.index_to_feature
 
                 contaminate_with={}
+                collection_sizes={}
                 all_class_labels=collection.keys()
 
-                #find a solution for multi class svm later
+                #TODO: implement a solution for multi class svm, not urgent
                 assert (len(all_class_labels)==2, "More than 2 classes (YES/NO) cannot be contaminated at the moment")
+                collection_sizes[all_class_labels[0]]=len(collection[all_class_labels[1]])
+                collection_sizes[all_class_labels[1]]=len(collection[all_class_labels[0]])
+
                 contaminate_with[all_class_labels[0]]=all_class_labels[1]
                 contaminate_with[all_class_labels[1]]=all_class_labels[0]
 
                 for sample in self.__iter__():
-                  new_attribute_list = list(sample.get_attributes_index_list())
-                  #add contamination from other training set. exactly X% of features of median content (allowing doubles):
-                  contamination_sample=random.choice(collection[contaminate_with[sample.current_class_label]])
-                  if percent<1.0:
-                    add_num=int(round(len(contamination_sample)*percent,0))
-                    new_attribute_list.extend(random.sample(contamination_sample,add_num))
-                  else:
-                    new_attribute_list.extend(contamination_sample)
+                    new_attribute_list = sample.get_attributes_index_list()
+                    #add contamination from test set. exactly X% of features of one sample (allowing doubles):
+                    contamination_sample=collection[contaminate_with[sample.current_class_label]][random.randint(collection_sizes[sample.current_class_label])]
+                    if percent<1.0:
+                        add_num=int(round(len(contamination_sample)*percent,0))
+                        new_attribute_list=append(new_attribute_list,random.choice(contamination_sample,add_num))
+                    else:
+                        new_attribute_list=append(new_attribute_list,contamination_sample)
 
-                  #removing doubles again and create new sample
-                  new_attribute_list=list(set(new_attribute_list))
-                  newsampleset.add_sample(sample.id,array(new_attribute_list))
+                    #removing doubles not needed! create new sample
+                    newsampleset.add_sample(sample.id,new_attribute_list)
 
                 newsampleset.load_class_labels(self.class_label_set)
                 newsampleset.set_current_class(self.current_class)
