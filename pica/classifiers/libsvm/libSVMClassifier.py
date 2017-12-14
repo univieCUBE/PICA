@@ -39,7 +39,8 @@ class libSVMClassifier(BaseClassifier):
 	
 	def classify(self,sample,model):
 		"""Classify a single sample with the model."""
-		sample_vector = [int(x) for x in sample.get_attribute_matrix()]
+		#sample_vector = [int(x) for x in sample.get_attribute_matrix()]
+		sample_vector = sample.get_attribute_matrix().tolist()
                 #adding support for probability models!
                 if model["svm_model"].probability == 1:
                     best_class_index, probs = model["svm_model"].predict_probability(sample_vector)
