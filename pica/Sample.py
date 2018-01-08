@@ -310,7 +310,7 @@ class SampleSet():
                     contamination_sample=collection[contaminate_with[sample.current_class_label]][random.randint(collection_sizes[sample.current_class_label])]
                     if percent<1.0:
                         add_num=int(round(len(contamination_sample)*percent,0))
-                        new_attribute_list=append(new_attribute_list,random.choice(contamination_sample,add_num))
+                        new_attribute_list=append(new_attribute_list,random.choice(contamination_sample,add_num,replace=False))
                     else:
                         new_attribute_list=append(new_attribute_list,contamination_sample)
 
