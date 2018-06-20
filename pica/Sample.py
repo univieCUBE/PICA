@@ -132,7 +132,8 @@ class SampleSet():
 		
 	def add_sample(self, who_string, attributes_matrix):
 		"""Append a new sample with a given identifier and numpy attribute matrix."""
-		self.indexed_samples.append(Sample(who_string,attributes_matrix,self))
+                if not self.get_by_id(who_string):
+		    self.indexed_samples.append(Sample(who_string,attributes_matrix,self))
 		
 	def load_class_labels(self,class_label_set):
 		"""Load the class labels to each of the relevant samples."""
