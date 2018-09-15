@@ -6,6 +6,7 @@ Perform cross-validation with a given training algorithm and classification algo
 @date 2010-02-16
 """
 import os,sys
+import json
 from optparse import OptionParser
 from pica.io.FileIO import FileIO
 from pica.CrossValidation import CrossValidation
@@ -25,6 +26,7 @@ if __name__ == "__main__":
 	parser.add_option("-c","--classes",action="store",dest="input_classes_filename",help="Read class labels from FILE",metavar="FILE")
 	parser.add_option("-t","--targetclass",action="store",dest="target_class",help="Set the target CLASS for testing",metavar="CLASS")
 	parser.add_option("-o","--output_filename",help="Write results to FILE",metavar="FILE",default=None)
+	parser.add_option("-C", "--crossvalidation_statistics_filename", help="Write the crossvalidation statistics to FILE", metavar="FILE", default=None)
 	parser.add_option("-p","--parameters",action="store",dest="parameters",help="FILE with additional, classifier-specific parameters. (confounders for CWMI)",metavar="FILE",default=None)
 	parser.add_option("-x","--profile",action="store_true",dest="profile",help="Profile the code",default=False)
 	# RVF add option save crossval files
@@ -120,5 +122,8 @@ if __name__ == "__main__":
 				fout.write("\t%s"%(m.get(key,"")))
 		fout.write("\n")
 	stats = crossvalidator.get_summary_statistics(0)
+	if options.crossvalidation_statistics_filename:
+		f = open(options.crossvalidation_statistics_filename, "w")
+		f.write(json.dumps(stats))
 	pprint(stats)
 	fout.close()
