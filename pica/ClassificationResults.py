@@ -211,12 +211,12 @@ class ClassificationResults:
 		return "\n".join(sout)
 		
 	def print_classification_log(self):
-		print "Organism\tTrue\tPredicted\tProbability"
+		print "Organism\tTrue\tPredicted\tPrediction_Confidence"
 		for c in self.classifications_list:
 			print c
 			
 	def print_classification_log_predictedOnly(self):
-		print "Organism\tPredicted\tProbability"
+		print "Organism\tPredicted\tPrediction_Confidence"
 		for c in self.classifications_list:
 			print "\t".join(c.getSpeciesPrediction())
 
