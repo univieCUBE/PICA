@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Extract the most important features of an SVM model, i.e. the COGs/NOGs with
 the highest predicted impact on presence/absence of the phenotype.
@@ -36,8 +37,16 @@ def readMetadata(model):
             metadata['total_sv'] = int( line.split()[-1] )
             processedMetadata += 1
         elif line.startswith('rho') and not metadata.has_key('rho'):
-            metadata['rho'] = float( line.split()[-1] )
+	    metadata['rho'] = float( line.split()[-1] )
             processedMetadata += 1
+
+	#HP added compatibility with probability prediction
+	elif line.startswith('probA') and not metadata.has_key('probA'):
+	    metadata['probA']=float( line.split()[-1] )
+	    processedMetadata +=1
+        elif line.startswith('probB') and not metadata.has_key('probB'):
+            metadata['probB']=float( line.split()[-1] )
+            processedMetadata +=1
         elif line.startswith('label') and not metadata.has_key('label'):
             labels = line.split()
             if len(labels) > 3:
@@ -62,7 +71,7 @@ def readMetadata(model):
             # do nothing, this line only indicates the start of SV block
             processedMetadata += 1
         else:
-            if processedMetadata != 8: # expecting metadata in lines 0..7, SVs from line 8
+            if processedMetadata != 8 and processedMetadata != 10: # expecting metadata in lines 0..7, SVs from line 8 or 10 if probability
                 raise SVMmodelError('Meta data error')
             else:
                 #everything alright!
@@ -73,10 +82,9 @@ def readMetadata(model):
     return metadata
     
 def readSupportVectors(model, metadata):
-    # MAGIC number 8: Lines of metadata in an SVM model
-    # TODO remove magic number
-    numberOfFeatures = len(model[8].split()) - 1
-    numberOfSVs = len(model) - 8
+    sizeOfMetadata=len(metadata.keys())+1
+    numberOfFeatures = len(model[sizeOfMetadata].split()) - 1
+    numberOfSVs = len(model) - sizeOfMetadata
     assert numberOfSVs == metadata['total_sv'], \
         "The number of support vectors according to metadata does not " + \
         "match the number that is present in the actual data set."
@@ -85,9 +93,9 @@ def readSupportVectors(model, metadata):
     sv = [[0 for svector in range(numberOfSVs)] for feature in range(numberOfFeatures)]
     svCoeff = [0.0 for svector in range(numberOfSVs)] 
     
-    for line in xrange(8, len(model)):
+    for line in xrange(sizeOfMetadata, len(model)):
         currentSupportVector = model[line].split()
-        svCoeff[line-8] = float( currentSupportVector[0] )
+        svCoeff[line-sizeOfMetadata] = float( currentSupportVector[0] )
         del currentSupportVector[0]
         if len(currentSupportVector) != numberOfFeatures:
             raise SVMmodelError('support vectors have different dimensionality')
@@ -97,7 +105,7 @@ def readSupportVectors(model, metadata):
                         
             if presenceValue == 1:
                 feature = int( dataPoint.split(':')[0] )
-                sv[feature][line-8] = 1
+                sv[feature][line-sizeOfMetadata] = 1
             # no need to handle presenceValue=0, since matrix was init as zeros
     
     return sv, svCoeff 
@@ -172,9 +180,12 @@ def printFeatureRanking(w, dimRank, args):
         nogDescription = readNogDescription(args.descr)      
         descriptionHeader = '\tGroup_description'
 
-    absLastRank = 1.0
+
+    ranking=[]
+    featureGroup_list=[]
+    featureGroups_count=0
+    absLastRank = 3.0
     relevanceThreshold = abs(w[dimRank[0]]) * (1 - args.range/100.0 )
-    print "Group_ID\tScore\tClass"+descriptionHeader
     for rank in dimRank:
         assert abs(w[rank]) <= absLastRank, "Feature ranking list appears not to be sorted. " + \
             "%r <= %r evaluated to False" % (abs(w[rank]), absLastRank)
@@ -185,17 +196,34 @@ def printFeatureRanking(w, dimRank, args):
                 predictorForClass = 'NO'
             # if fmi[rank].find('/') != -1:     #Several COGs/NOGs might be grouped together because of same profile 
             featureGroup = fmi[rank].split('/') # ...need to be split on FS '/'
-            for feature in featureGroup:        # ...and printed individually.
-                if args.descr:
-                    description = '\t' + nogDescription[feature]
-                print feature + '\t' + str(w[rank]) + '\t' + predictorForClass + description
-            # else:   # Single COG can be printed directly
-            #    print fmi[rank] + '\t' + str(w[rank]) + '\t' + predictorForClass + description
-            
+
+            # PH
+            # collect compressed features as groups and write only "FeatureGroupX\tweight" and group to separate file (outputfile).groups
+
+
+            if len(featureGroup) > 1:
+                featureGroup_list.append(featureGroup)
+                featureGroups_count=featureGroups_count+1
+                ranking.append(("FeatureGroup"+str(featureGroups_count),str(w[rank]),predictorForClass,description))
+            else:
+                ranking.append((featureGroup[0],str(w[rank]),predictorForClass,description))
+
             absLastRank = abs(w[rank])
         else:
             break
-        
+    output_base=".".join(args.model.split(".")[:-1])
+    with open(output_base + ".rank","w") as rank_file:
+        rank_file.write("Group_ID\tScore\tClass"+descriptionHeader+"\n")
+        for featureRank in ranking:
+            rank_file.write("\t".join(featureRank)+"\n")
+
+    with open(output_base + ".rank.groups","w") as group_file:
+        group_file.write("Group_ID\tFeatures\n")
+        for index in range(0,len(featureGroup_list)):
+            group_file.write("FeatureGroup"+str(index+1)+"\t"+"/".join(featureGroup_list[index])+"\n")
+            # /PH       
+
+ 
 def checkArguments(args):
     if not os.path.isfile(args.model):
         print "ARGUMENT ERROR: SVM model file does not exist"

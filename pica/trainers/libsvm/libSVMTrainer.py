@@ -15,7 +15,7 @@ class libSVMTrainer(BaseTrainer):
 	KERNEL_TYPES = {"LINEAR":LINEAR,"RBF":RBF,"POLY":POLY,"SIGMOID":SIGMOID}
 	SVM_TYPES = {"C_SVC":C_SVC,"NU_SVC":NU_SVC,"ONE_CLASS":ONE_CLASS,"EPSILON_SVR":EPSILON_SVR,"NU_SVR":NU_SVR}
 	
-	def __init__(self,parameters_filename=None,kernel_type=None,C=None):
+	def __init__(self,parameters_filename=None,kernel_type=None,C=None,probability=None):
 		"Load defaults"
 		
 		libSVMTrainer.default_parameters = svm_parameter.default_parameters.copy()
@@ -28,6 +28,7 @@ class libSVMTrainer(BaseTrainer):
 		#p["kernel_type"] = "RBF"
 		#p["kernel_type"] = "POLY"
 		#p["kernel_type"] = "SIGMOID"
+                p["probability"] = 0
 		
 		
 		"Overrides from file"
@@ -38,10 +39,12 @@ class libSVMTrainer(BaseTrainer):
 				print "Parameter file could not be found, using defaults instead"
 
 		"Overrides from method call parameters"
-		if kernel_type:
+		if libSVMTrainer.KERNEL_TYPES.get(kernel_type):
 			p["kernel_type"] = kernel_type
 		if C:
 			p["C"] = C
+		if probability:
+			p["probability"] = 1
 		
 		print "Parameters modified from LIBSVM default: %s"%(p)
 		self.param.update(p)
@@ -76,14 +79,15 @@ class libSVMTrainer(BaseTrainer):
 		degree = int(self.param["degree"])
 		coef0 = int(self.param["coef0"])
 		nu = float(self.param["nu"])
-		print "Starting svm (svm_type=%s,kernel_type=%s,C=%f,gamma=%f)"%(svm_type,kernel_type,C,gamma)
+                b = int(self.param["probability"])
+		print "Starting svm (svm_type=%s,kernel_type=%s,C=%f,gamma=%f,probability=%i)"%(svm_type,kernel_type,C,gamma,b)
 		svm_param = svm_parameter(kernel_type = kernel_type, 
 					svm_type = svm_type,
 					C = C, 
 					gamma = gamma,
 					degree = degree,
 					coef0 = coef0,
-					nu = nu)
+					nu = nu, probability = b)
 	
 					
 		

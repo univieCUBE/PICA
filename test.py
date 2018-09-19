@@ -1,9 +1,12 @@
-"""
-Test the association rule model on a sample set.
+#!/usr/bin/env python
 
-@author Norman MacDonald
-@date 2010-02-16
-"""
+#"""
+#Test the association rule model on a sample set.
+#
+#@author Norman MacDonald
+#@date 2010-02-16
+#"""
+
 import os,sys
 from optparse import OptionParser
 from pica.io.FileIO import FileIO, error
@@ -77,7 +80,7 @@ if __name__ == "__main__":
 	
 	classifier.set_null_flag("NULL")
 	classification_results = classifier.test(samples,rules)
-	
+
 	if options.input_classes_filename:
 		print classification_results.print_classification_log()
 		print classification_results

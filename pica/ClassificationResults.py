@@ -5,16 +5,17 @@ Store the results and statistics of a classification algorithm.
 @date: 2010-02-16
 """
 class ClassificationResult:
-	def __init__(self,who,predicted_class,true_class):
+	def __init__(self,who,predicted_class,true_class,prob):
 		self.who = who
 		self.predicted_class = predicted_class
 		self.true_class = true_class
+                self.prob = prob
 		
 	def __str__(self):
-		return "%s\t%s\t%s"%(self.who,self.true_class,self.predicted_class)
+		return "%s\t%s\t%s\t%s"%(self.who,self.true_class,self.predicted_class,str(prob))
 	
 	def getSpeciesPrediction(self):
-		return [self.who, self.predicted_class]
+		return [self.who, self.predicted_class, str(self.prob)]
 
 class ClassificationResults:
 	"""Store the results and statistics of a classification algorithm."""
@@ -30,12 +31,12 @@ class ClassificationResults:
 		"""Change the positive class label."""
 		self._positive_class = positive_class
 		
-	def add_classification(self,who,predicted_class,true_class):
+	def add_classification(self,who,predicted_class,true_class,prob):
 		if predicted_class == None:
 			predicted_class = "NULL"
 		if true_class == None:
 			true_class = "NULL"
-		classification_result = ClassificationResult(who,predicted_class,true_class)
+		classification_result = ClassificationResult(who,predicted_class,true_class,prob)
 		if not self.classifications.has_key(who):
 			self.classifications[who] = []
 		self.classifications[who].append(classification_result)
@@ -96,6 +97,14 @@ class ClassificationResults:
 				if correct > 0:
 					accuracy += float(correct)/(correct+incorrect)
 		return float(accuracy)/nclasses
+
+
+        #def get_false_positive_rate(self):
+        #        """Return the raw accuracy averaged over each class label."""
+        #        class_labels = self._get_class_labels()
+        #        nclasses = 0
+        #        tn = 0
+
 		
 	def get_F1_score(self):
 		"""Return the F1 score for comparison with netCAR"""
@@ -133,6 +142,39 @@ class ClassificationResults:
 		if (precision*sensitivity > 0):
 			f1_score = 2 * (precision*sensitivity) / (precision+sensitivity)
 		return f1_score
+
+        def get_FN_FP_rate(self):
+                """Return the FN, FP rates"""
+                fn_rate = 0
+                fp_rate = 0
+                
+                #Confusion matrix: cm[actual][predicted]
+                cm = self.build_confusion_matrix()
+                tp=0
+                tn=0
+                fp=0
+                fn=0
+                nullpos=0
+                nullneg=0
+                if (cm.has_key('YES')):
+                        if (cm['YES'].has_key('YES')):
+                                tp = cm['YES']['YES']
+                        if (cm['YES'].has_key('NO')):
+                                fn = cm['YES']['NO']
+                        if ( cm['YES'].has_key('NULL') ):
+                                nullpos = cm['YES']['NULL']
+                if (cm.has_key('NO')):
+                        if (cm['NO'].has_key('YES')):
+                                fp = cm['NO']['YES']
+                        if (cm['NO'].has_key('NO')):
+                                tn = cm['NO']['NO']
+                        if ( cm['NO'].has_key('NULL') ):
+                                nullneg = cm['NO']['NULL']
+
+                if (fn+tp > 0):
+                        fn_rate = float(fn) / (fn + tp)
+                        fp_rate = float(fp) / (fp + tn)
+                return fn_rate, fp_rate
 	
 	def build_confusion_matrix(self):
 		"""Build a dictionary [actual][predicted] of classification results."""
@@ -169,11 +211,33 @@ class ClassificationResults:
 		return "\n".join(sout)
 		
 	def print_classification_log(self):
-		print "Organism\tTrue\tPredicted"
+		print "Organism\tTrue\tPredicted\tPrediction_Confidence"
 		for c in self.classifications_list:
 			print c
 			
 	def print_classification_log_predictedOnly(self):
-		print "Organism\tPredicted"
+		print "Organism\tPredicted\tPrediction_Confidence"
 		for c in self.classifications_list:
 			print "\t".join(c.getSpeciesPrediction())
+
+
+class ClassificationSummary:
+        """New return object to avoid transfer of large data between separate processes"""
+
+        def __init__(self, results):
+            self.raw_accuracy = results.get_raw_accuracy()
+            self.FN_rate, self.FP_rate = results.get_FN_FP_rate()
+            self.F1_score = results.get_F1_score()
+            self.balanced_accuracy = results.get_balanced_accuracy()
+
+        def get_raw_accuracy(self):
+            return self.raw_accuracy
+
+        def get_FN_FP_rate(self):
+            return self.FN_rate, self.FP_rate
+
+        def get_F1_score(self):
+            return self.F1_score
+
+        def get_balanced_accuracy(self):
+            return self.balanced_accuracy

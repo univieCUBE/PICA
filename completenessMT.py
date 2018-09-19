@@ -5,11 +5,10 @@ Perform cross-validation with a given training algorithm and classification algo
 @author Norman MacDonald
 @date 2010-02-16
 """
-import os,sys
-import json
+import os,sys, json
 from optparse import OptionParser
 from pica.io.FileIO import FileIO
-from pica.CrossValidation import CrossValidation
+from pica.CompletenessMultithreading import Completeness
 from pica.TestConfiguration import TestConfiguration
 from pica.io.FileIO import error
 from pprint import pprint # add by RVF
@@ -18,6 +17,7 @@ if __name__ == "__main__":
 	parser = OptionParser(version="PICA %prog 1.0.1")
 	parser.add_option("-a","--training_algorithm",help="Training algorithm [default = %default]",metavar="ALG",default="libsvm.libSVMTrainer")
 	parser.add_option("-k","--svm_cost",action="store",dest="C",metavar="FLOAT",help="Set the SVM misclassification penalty parameter C to FLOAT")
+        parser.add_option("--kernel",action="store",dest="kernel",default="LINEAR")
 	parser.add_option("-b","--classification_algorithm",help="Testing algorithm [default = %default]",metavar="ALG",default="libsvm.libSVMClassifier")
 	parser.add_option("-m","--accuracy_measure",help="Accuracy measure [default = %default]",metavar="ALG",default="laplace")
 	parser.add_option("-r","--replicates",type="int",help="Number of replicates [default = %default]",default=10)
@@ -26,7 +26,6 @@ if __name__ == "__main__":
 	parser.add_option("-c","--classes",action="store",dest="input_classes_filename",help="Read class labels from FILE",metavar="FILE")
 	parser.add_option("-t","--targetclass",action="store",dest="target_class",help="Set the target CLASS for testing",metavar="CLASS")
 	parser.add_option("-o","--output_filename",help="Write results to FILE",metavar="FILE",default=None)
-	parser.add_option("-C", "--crossvalidation_statistics_filename", help="Write the crossvalidation statistics to FILE", metavar="FILE", default=None)
 	parser.add_option("-p","--parameters",action="store",dest="parameters",help="FILE with additional, classifier-specific parameters. (confounders for CWMI)",metavar="FILE",default=None)
 	parser.add_option("-x","--profile",action="store_true",dest="profile",help="Profile the code",default=False)
 	# RVF add option save crossval files
@@ -36,6 +35,13 @@ if __name__ == "__main__":
 	parser.add_option("-f","--feature_select",help="Model file (currently only association rule files) with features to select from [default: %default]",metavar="FILE",default=None)
 	parser.add_option("-1","--feature_select_score",help="Order features by (feature selection option)", default="order_cwmi")
 	parser.add_option("-n","--feature_select_top_n",help="Take the top n features(feature selection option)", type="int", default=20)
+
+        # PH add option completeness, contamination
+        parser.add_option("-w","--completeness_steps",help="Completeness steps between (default = %default)",type="int",metavar="INT",default=10)
+        parser.add_option("-z","--contamination_steps",help="Contamination steps between (default = %default)",type="int",metavar="INT",default=0)
+        parser.add_option("--completeness",help="If completeness_steps=0, use specified completeness (default = %default)",type="float",metavar="FLOAT",default=1.0)
+        parser.add_option("--contamination",help="If contamination_steps=0, use specified contamination (default = %default)",type="float",metavar="FLOAT",default=0.0)
+        parser.add_option("--threads",help="Allow multiple threads",type="int",metavar="INT",default=1)
 	
 	(options, args) = parser.parse_args()
 	
@@ -58,6 +64,7 @@ if __name__ == "__main__":
 		exit(1)
 		
 	fileio = FileIO()
+        unmodified_samples=fileio.load_samples(options.input_samples_filename)
 	samples = fileio.load_samples(options.input_samples_filename)
 	if options.feature_select:
 		print "Selecting top %d features from %s, ordered by %s"%(options.feature_select_top_n,options.feature_select,options.feature_select_score)
@@ -68,14 +75,21 @@ if __name__ == "__main__":
 		selected_rules.extend(rules[:options.feature_select_top_n])
 		samples = samples.feature_select(selected_rules)
 	classes = fileio.load_classes(options.input_classes_filename)
+        unmodified_samples.load_class_labels(classes)
 	samples.load_class_labels(classes)
 	print "Sample set has %d features."%(samples.get_number_of_features())
+        unmodified_samples.set_current_class(options.target_class)
 	samples.set_current_class(options.target_class)
 	print "Parameters from %s"%(options.parameters)
 	print "Compressing features...",
-	samples = samples.compress_features()
+
+        #for the moment: don't compress features. potential bug with testing! potentially interferes with completeness check
+        samples = samples.compress_features()
+
 	print "compressed to %d distinct features."%(samples.get_number_of_features())
 	
+        unmodified_samples.hide_nulls(options.target_class)
+
 	samples.set_current_class(options.target_class)
 	samples.hide_nulls(options.target_class)
 	
@@ -83,10 +97,11 @@ if __name__ == "__main__":
 	modulepath = "pica.trainers.%s"%(options.training_algorithm)
 	classname = options.training_algorithm.split(".")[-1]
 	TrainerClass = __import__(modulepath, fromlist=(classname,))
+        print(options.kernel)
 	if options.C:
-		trainer = TrainerClass.__dict__[classname](options.parameters, C=options.C)
+		trainer = TrainerClass.__dict__[classname](options.parameters, kernel_type=options.kernel, C=options.C)
 	else:
-		trainer = TrainerClass.__dict__[classname](options.parameters)
+		trainer = TrainerClass.__dict__[classname](options.parameters, kernel_type=options.kernel)
 	trainer.set_null_flag("NULL")
 	
 	modulepath = "pica.classifiers.%s"%(options.classification_algorithm)
@@ -96,34 +111,64 @@ if __name__ == "__main__":
 	classifier.set_null_flag("NULL")
 	
 	test_configurations = [TestConfiguration("A",None,trainer,classifier)]
-	
+
+
+        #HP added contamination/completeness
+        if options.contamination_steps == 0:
+            contamination=[options.contamination]
+        else:
+            contamination=[]
+            for i in xrange(0,options.contamination_steps+1,1):
+                contamination.append(float(i/float(1.0*options.contamination_steps)))
+
+        if options.completeness_steps == 0:
+            completeness=[options.completeness]
+        else:
+            completeness=[]
+            for i in xrange(0,options.completeness_steps+1,1):
+                completeness.append(float(i/float(1.0*options.completeness_steps)))
+
+        print("selected completeness levels:")
+        print(completeness)
+        print("selected contamination levels:")
+        print(contamination)
+
 	#RVF changed (added the last 3 parameters)
 	if ( options.crossval_files ):
-		crossvalidator = CrossValidation(samples,options.parameters,options.folds,options.replicates,test_configurations,False,None,options.target_class,options.output_filename)
+        	crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples,options.threads,False,None,options.target_class,options.output_filename)
 	else:
-		crossvalidator = CrossValidation(samples,options.parameters,options.folds,options.replicates,test_configurations)		
+		crossvalidator = Completeness(samples,options.parameters,options.folds,options.replicates,completeness,contamination,test_configurations,unmodified_samples,options.threads)		
 	crossvalidator.crossvalidate()
-	classifications,misclassifications = crossvalidator.get_classification_vector()
-	metadata = None
-	if options.metadata:
-		metadata = fileio.load_metadata(options.metadata)
-	
+
 	fout = open(options.output_filename,"w")
-	fout.write("who\t%s\tFalse Classifications\tTrue Classifications\tTotal"%(options.target_class))
-	if metadata:
-		for key in metadata.get_key_list():
-			fout.write("\t%s"%(key))
-	fout.write("\n")
-	for who in misclassifications.keys():
-		fout.write("%s\t%s\t%d\t%d\t%d"%(who,classes[who][options.target_class],misclassifications[who][0],misclassifications[who][1],misclassifications[who][0]+misclassifications[who][1]))
-		if metadata:
-			m = metadata.get(who,{})
-			for key in metadata.get_key_list():
-				fout.write("\t%s"%(m.get(key,"")))
-		fout.write("\n")
-	stats = crossvalidator.get_summary_statistics(0)
-	if options.crossvalidation_statistics_filename:
-		f = open(options.crossvalidation_statistics_filename, "w")
-		f.write(json.dumps(stats))
-	pprint(stats)
+	
+        stats = crossvalidator.get_summary_statistics(0)
+        resorted={}
+        jsonout=[]
+        for index in stats[0][0].keys():
+            resorted[index]=[]
+            for w in range(len(stats)):
+                resorted[index].append([])
+                for z in range(len(stats[w])):
+                    resorted[index][w].append(stats[w][z][index])
+
+        for w in range(len(stats)):
+            for z in range(len(stats[w])):
+                jsonout.append(stats[w][z])
+
+
+        for index in resorted.keys():
+            fout.write("[%s]\n"%index)
+            for w in range(len(resorted[index])):
+                printline=[]
+                for z in range(len(resorted[index][w])):
+                    printline.append(str(resorted[index][w][z]))
+                fout.write("%s\n"%"\t".join(printline))
+            fout.write("\n")
+
+	#pprint(stats)
 	fout.close()
+
+        fout = open(options.output_filename+".json","w")
+        fout.write(json.dumps(jsonout, indent=4))
+        fout.close()
